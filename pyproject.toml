@@ -1,7 +1,7 @@
-# img-cut Python package configuration
+# PixelLayer Python package configuration
 
 [project]
-name = "img-cut"
+name = "pixellayer"
 version = "0.1.0"
 description = "Local MCP server for AI-powered image processing — background removal, format conversion, optimization, and vectorization."
 readme = "README.md"

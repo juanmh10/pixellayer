@@ -429,7 +429,7 @@ wheels = [
 ]
 
 [[package]]
-name = "img-cut"
+name = "pixellayer"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 def register_all_tools(mcp: FastMCP) -> None:
-    """Register all img-cut tools on the FastMCP server instance."""
+    """Register all PixelLayer tools on the FastMCP server instance."""
 
     # ========================================================================
     # Tool 1: remove_background

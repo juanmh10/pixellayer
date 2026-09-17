@@ -1,10 +1,10 @@
-# img-cut 🔪
+# PixelLayer 🎨
 
 > Local MCP server for AI-powered image processing — background removal, format conversion, optimization, and vectorization.
 
 ## What is this?
 
-**img-cut** is a Python-based MCP (Model Context Protocol) server that exposes image processing tools to AI coding agents. When you're developing in any repo and need to process images, your agent calls img-cut's tools via MCP — no base64, no token bloat, just file paths in and out.
+**PixelLayer** is a Python-based MCP (Model Context Protocol) server that exposes image processing tools to AI coding agents. When you're developing in any repo and need to process images, your agent calls PixelLayer's tools via MCP — no base64, no token bloat, just file paths in and out.
 
 ### Key Features
 
@@ -47,7 +47,7 @@ python -m src.mcp_server
 
 ## Agent Configuration
 
-Configure **img-cut** in your preferred AI agent environment. Replace `<path-to-img-cut>` with your local repository clone path and `<path-to-workspaces>` with the directories authorized for image processing.
+Configure **pixellayer** in your preferred AI agent environment. Replace `<path-to-pixellayer>` with your local repository clone path and `<path-to-workspaces>` with the directories authorized for image processing.
 
 ### 1. Antigravity CLI (AGY)
 **Config File:** `~/.gemini/config/mcp_config.json` (JSON)
@@ -55,17 +55,17 @@ Configure **img-cut** in your preferred AI agent environment. Replace `<path-to-
 ```json
 {
   "mcpServers": {
-    "img-cut": {
-      "command": "<path-to-img-cut>/.venv/bin/python",
+    "pixellayer": {
+      "command": "<path-to-pixellayer>/.venv/bin/python",
       "args": [
         "-m",
         "src.mcp_server"
       ],
       "env": {
-        "PYTHONPATH": "<path-to-img-cut>",
-        "IMGCUT_ALLOWED_WORKSPACES": "<path-to-workspaces>",
-        "IMGCUT_LOG_DIR": "<path-to-img-cut>/logs",
-        "IMGCUT_MODEL_TTL": "300"
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
       }
     }
   }
@@ -76,17 +76,17 @@ Configure **img-cut** in your preferred AI agent environment. Replace `<path-to-
 **Config File:** `~/.codex/config.toml` (TOML)
 
 ```toml
-[mcp_servers.img-cut]
-command = "<path-to-img-cut>/.venv/bin/python"
+[mcp_servers.pixellayer]
+command = "<path-to-pixellayer>/.venv/bin/python"
 args = ["-m", "src.mcp_server"]
 startup_timeout_sec = 30.0
 tool_timeout_sec = 120.0
 
-[mcp_servers.img-cut.env]
-PYTHONPATH = "<path-to-img-cut>"
-IMGCUT_ALLOWED_WORKSPACES = "<path-to-workspaces>"
-IMGCUT_LOG_DIR = "<path-to-img-cut>/logs"
-IMGCUT_MODEL_TTL = "300"
+[mcp_servers.pixellayer.env]
+PYTHONPATH = "<path-to-pixellayer>"
+PIXELLAYER_ALLOWED_WORKSPACES = "<path-to-workspaces>"
+PIXELLAYER_LOG_DIR = "<path-to-pixellayer>/logs"
+PIXELLAYER_MODEL_TTL = "300"
 ```
 
 ### 3. Claude Code
@@ -95,17 +95,17 @@ IMGCUT_MODEL_TTL = "300"
 ```json
 {
   "mcpServers": {
-    "img-cut": {
-      "command": "<path-to-img-cut>/.venv/bin/python",
+    "pixellayer": {
+      "command": "<path-to-pixellayer>/.venv/bin/python",
       "args": [
         "-m",
         "src.mcp_server"
       ],
       "env": {
-        "PYTHONPATH": "<path-to-img-cut>",
-        "IMGCUT_ALLOWED_WORKSPACES": "<path-to-workspaces>",
-        "IMGCUT_LOG_DIR": "<path-to-img-cut>/logs",
-        "IMGCUT_MODEL_TTL": "300"
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
       }
     }
   }
@@ -114,7 +114,7 @@ IMGCUT_MODEL_TTL = "300"
 
 *Or configure directly via CLI:*
 ```bash
-claude mcp add img-cut <path-to-img-cut>/.venv/bin/python -m src.mcp_server -e PYTHONPATH=<path-to-img-cut> -e IMGCUT_ALLOWED_WORKSPACES=<path-to-workspaces>
+claude mcp add pixellayer <path-to-pixellayer>/.venv/bin/python -m src.mcp_server -e PYTHONPATH=<path-to-pixellayer> -e PIXELLAYER_ALLOWED_WORKSPACES=<path-to-workspaces>
 ```
 
 ### 4. OpenCode
@@ -124,18 +124,18 @@ claude mcp add img-cut <path-to-img-cut>/.venv/bin/python -m src.mcp_server -e P
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "img-cut": {
+    "pixellayer": {
       "type": "local",
       "command": [
-        "<path-to-img-cut>/.venv/bin/python",
+        "<path-to-pixellayer>/.venv/bin/python",
         "-m",
         "src.mcp_server"
       ],
       "environment": {
-        "PYTHONPATH": "<path-to-img-cut>",
-        "IMGCUT_ALLOWED_WORKSPACES": "<path-to-workspaces>",
-        "IMGCUT_LOG_DIR": "<path-to-img-cut>/logs",
-        "IMGCUT_MODEL_TTL": "300"
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
       },
       "enabled": true,
       "timeout": 120000
@@ -162,9 +162,9 @@ claude mcp add img-cut <path-to-img-cut>/.venv/bin/python -m src.mcp_server -e P
 
 ## How It Works
 
-1. Your AI agent discovers img-cut tools via MCP
+1. Your AI agent discovers PixelLayer tools via MCP
 2. Agent calls a tool with an **image file path** + parameters
-3. img-cut processes the image locally (lazy-loads model if needed)
+3. PixelLayer processes the image locally (lazy-loads model if needed)
 4. Returns the **output file path** + metadata (size, dimensions, reduction %)
 5. **No image data flows through the MCP protocol** — only paths and metadata
 

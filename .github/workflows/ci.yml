@@ -41,6 +41,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Run img-cut Quality Gate & Audit
+      - name: Run PixelLayer Quality Gate & Audit
         run: |
           uv run python scripts/audit.py --ci

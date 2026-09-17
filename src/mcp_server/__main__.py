@@ -1,6 +1,6 @@
 """
-img-cut MCP Server Entry Point
-================================
+PixelLayer MCP Server Entry Point
+=================================
 Initializes the FastMCP server, registers all models (without loading),
 registers all tools, and starts the stdio transport.
 
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_server() -> FastMCP:
-    """Create and configure the img-cut MCP server.
+    """Create and configure the PixelLayer MCP server.
 
     1. Setup logging (stderr only)
     2. Register all model wrappers (NO weight loading)
@@ -38,7 +38,7 @@ def create_server() -> FastMCP:
     """
     # 1. Logging — stderr only (stdout reserved for MCP stdio)
     setup_logging(level=logging.INFO)
-    logger.info("Initializing img-cut MCP server...")
+    logger.info("Initializing PixelLayer MCP server...")
 
     # 2. Register models (lightweight — just metadata, NO loading)
     for model in create_birefnet_models():
@@ -51,9 +51,9 @@ def create_server() -> FastMCP:
 
     # 3. Create FastMCP server and register tools
     mcp = FastMCP(
-        "img-cut",
+        "pixellayer",
         instructions=(
-            "img-cut provides local, AI-powered image processing tools. "
+            "PixelLayer provides local, AI-powered image processing tools. "
             "IMPORTANT RULES FOR CALLING AGENTS:\n"
             "1. PATH-ONLY: Pass and expect workspace-relative file paths (e.g. 'input/photo.png', 'output/vector.svg'). "
             "Never send or ask for base64, raw bytes, or system absolute paths.\n"

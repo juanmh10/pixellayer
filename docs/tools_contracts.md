@@ -1,6 +1,6 @@
 # Referência de Contratos e Ferramentas MCP
 
-Este documento define todos os contratos, esquemas Pydantic v2 e ferramentas que modelos de linguagem (LLMs) e agentes podem invocar no servidor **img-cut**.
+Este documento define todos os contratos, esquemas Pydantic v2 e ferramentas que modelos de linguagem (LLMs) e agentes podem invocar no servidor **PixelLayer** (`pixellayer`).
 
 ---
 

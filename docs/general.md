@@ -1,8 +1,8 @@
-# Documentação Geral do Projeto img-cut
+# Documentação Geral do Projeto PixelLayer
 
-## 1. O que é o img-cut?
+## 1. O que é o PixelLayer?
 
-O **img-cut** é um servidor local baseado no **Model Context Protocol (MCP)**, desenvolvido em Python, que disponibiliza ferramentas avançadas de processamento e manipulação de imagens potencializadas por inteligência artificial para assistentes de programação e agentes de IA (como Claude, Antigravity, VS Code Copilot, Cursor).
+O **PixelLayer** (servidor MCP `pixellayer`) é um servidor local baseado no **Model Context Protocol (MCP)**, desenvolvido em Python, que disponibiliza ferramentas avançadas de processamento e manipulação de imagens potencializadas por inteligência artificial para assistentes de programação e agentes de IA (como Claude, Antigravity, VS Code Copilot, Cursor).
 
 O principal diferencial do projeto é o processamento estritamente local com carregamento sob demanda (*lazy-loading*), além da política **Path-Only**: nenhum byte em base64 trafega pelas mensagens do protocolo MCP, evitando estouro de janelas de contexto e garantindo alta performance.
 
@@ -86,7 +86,7 @@ O principal diferencial do projeto é o processamento estritamente local com car
 ## 4. Política de Caminhos e Segurança (No Absolute Paths)
 
 - O projeto veta caminhos absolutos atrelados à máquina do desenvolvedor (ex: `/home/...` ou `C:\Users\...`).
-- Toda entrada é resolvida através de `resolve_safe_path()` contra o diretório de execução atual ou caminhos especificados na variável de ambiente `IMGCUT_ALLOWED_WORKSPACES`.
+- Toda entrada é resolvida através de `resolve_safe_path()` contra o diretório de execução atual ou caminhos especificados na variável de ambiente `PIXELLAYER_ALLOWED_WORKSPACES` (ou `IMGCUT_ALLOWED_WORKSPACES`).
 - Qualquer tentativa de evasão (*path traversal*) para fora dos limites seguros dispara uma exceção `SecurityError`.
 
 ---
@@ -94,6 +94,6 @@ O principal diferencial do projeto é o processamento estritamente local com car
 ## 5. Estrutura de Pastas Operacionais
 
 - `docs/`: Documentações técnicas, guias de ferramentas e de exposição do servidor.
-- `logs/`: Arquivos de log de execução da aplicação (ex: `logs/img-cut.log`).
+- `logs/`: Arquivos de log de execução da aplicação (ex: `logs/pixellayer.log`).
 - `trash/`: Destino de arquivos temporários descartados, relatórios antigos e saídas obsoletas.
 - `models_cache/`: Diretório de pesos locais baixados das redes neurais (ignorado pelo versionamento Git).

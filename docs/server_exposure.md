@@ -1,6 +1,6 @@
-# Exposição do Servidor Local MCP
+# Exposição do Servidor Local MCP (PixelLayer)
 
-O **img-cut** é projetado para rodar como um servidor local baseado em `stdio`, comunicando-se diretamente com o cliente/agente MCP.
+O **PixelLayer** (`pixellayer`) é projetado para rodar como um servidor local baseado em `stdio`, comunicando-se diretamente com o cliente/agente MCP.
 
 ---
 
@@ -31,7 +31,7 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
 ```json
 {
   "mcpServers": {
-    "img-cut": {
+    "pixellayer": {
       "command": "uv",
       "args": [
         "run",
@@ -42,7 +42,7 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
         "src.mcp_server"
       ],
       "env": {
-        "IMGCUT_ALLOWED_WORKSPACES": "."
+        "PIXELLAYER_ALLOWED_WORKSPACES": "."
       }
     }
   }
@@ -53,7 +53,7 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
 ```json
 {
   "mcpServers": {
-    "img-cut": {
+    "pixellayer": {
       "command": "uv",
       "args": [
         "run",
@@ -64,9 +64,9 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
         "src.mcp_server"
       ],
       "env": {
-        "IMGCUT_ALLOWED_WORKSPACES": "${workspaceFolder}",
-        "IMGCUT_LOG_DIR": "${workspaceFolder}/logs",
-        "IMGCUT_MODEL_TTL": "300"
+        "PIXELLAYER_ALLOWED_WORKSPACES": "${workspaceFolder}",
+        "PIXELLAYER_LOG_DIR": "${workspaceFolder}/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
       }
     }
   }
@@ -75,40 +75,42 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
 
 #### Exemplo para Codex CLI (`~/.codex/config.toml`):
 ```toml
-[mcp_servers.img-cut]
+[mcp_servers.pixellayer]
 command = "<path-to-repo>/.venv/bin/python"
 args = ["-m", "src.mcp_server"]
 startup_timeout_sec = 30.0
 tool_timeout_sec = 120.0
 
-[mcp_servers.img-cut.env]
+[mcp_servers.pixellayer.env]
 PYTHONPATH = "<path-to-repo>"
-IMGCUT_ALLOWED_WORKSPACES = "<path-to-workspaces>"
-IMGCUT_LOG_DIR = "<path-to-repo>/logs"
-IMGCUT_MODEL_TTL = "300"
+PIXELLAYER_ALLOWED_WORKSPACES = "<path-to-workspaces>"
+PIXELLAYER_LOG_DIR = "<path-to-repo>/logs"
+PIXELLAYER_MODEL_TTL = "300"
 ```
 
 ---
 
 ## 3. Variáveis de Ambiente Suportadas
 
+O servidor aceita variáveis com prefixo `PIXELLAYER_` (ou retrocompatíveis com `IMGCUT_`):
+
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `IMGCUT_DEFAULT_MODEL` | `birefnet-general` | Modelo inicial padrão para remoção de fundo. |
-| `IMGCUT_MODEL_TTL` | `300` | Tempo de vida em segundos antes de descarregar modelos inativos da memória. |
-| `IMGCUT_MODELS_CACHE` | `<repo_root>/models_cache` | Diretório onde os pesos das redes neurais são armazenados. |
-| `IMGCUT_ALLOWED_WORKSPACES` | `""` (Livre/Aviso) | Lista separada por `;` de diretórios autorizados para leitura e escrita. |
-| `IMGCUT_LOG_DIR` | `<repo_root>/logs` | Pasta de saída para os arquivos de log. |
-| `IMGCUT_LOG_FILE` | `<repo_root>/logs/img-cut.log` | Caminho do arquivo de log da aplicação. |
-| `IMGCUT_DEVICE` | `auto` | Dispositivo de inferência: `auto`, `cpu`, `cuda`, `mps`. |
-| `IMGCUT_MAX_PIXELS` | `50000000` | Limite de segurança de pixels para mitigar ataques de descompressão (Pixel Flood). |
+| `PIXELLAYER_DEFAULT_MODEL` | `birefnet-general` | Modelo inicial padrão para remoção de fundo. |
+| `PIXELLAYER_MODEL_TTL` | `300` | Tempo de vida em segundos antes de descarregar modelos inativos da memória. |
+| `PIXELLAYER_MODELS_CACHE` | `<repo_root>/models_cache` | Diretório onde os pesos das redes neurais são armazenados. |
+| `PIXELLAYER_ALLOWED_WORKSPACES` | `""` (Livre/Aviso) | Lista separada por `;` de diretórios autorizados para leitura e escrita. |
+| `PIXELLAYER_LOG_DIR` | `<repo_root>/logs` | Pasta de saída para os arquivos de log. |
+| `PIXELLAYER_LOG_FILE` | `<repo_root>/logs/pixellayer.log` | Caminho do arquivo de log da aplicação. |
+| `PIXELLAYER_DEVICE` | `auto` | Dispositivo de inferência: `auto`, `cpu`, `cuda`, `mps`. |
+| `PIXELLAYER_MAX_PIXELS` | `50000000` | Limite de segurança de pixels para mitigar ataques de descompressão (Pixel Flood). |
 
 ---
 
 ## 4. Cuidados Críticos na Execução MCP
 
 1. **Nunca utilize `print()`**: O protocolo MCP stdio utiliza a saída padrão (`stdout`) para troca de mensagens JSON-RPC. Qualquer texto não estruturado enviado para `stdout` corrompe a comunicação com o cliente.
-2. **Logs em `stderr` e em arquivo**: Toda a telemetria do servidor é canalizada para `sys.stderr` e para `logs/img-cut.log`.
+2. **Logs em `stderr` e em arquivo**: Toda a telemetria do servidor é canalizada para `sys.stderr` e para `logs/pixellayer.log`.
 3. **Paths Relativos**: Clientes MCP devem enviar caminhos relativos ao workspace configurado, garantindo interoperabilidade entre sistemas Linux, macOS e WSL/Windows.
 
 ---
@@ -118,7 +120,7 @@ IMGCUT_MODEL_TTL = "300"
 Para proteger a integridade do sistema operacional e da máquina onde o servidor MCP executa, as seguintes salvaguardas são aplicadas por padrão:
 
 ### 5.1. Restrição de Escopo (Workspace Jail & Anti-Path Traversal)
-- O modelo só tem autorização para processar caminhos dentro das pastas definidas em `IMGCUT_ALLOWED_WORKSPACES`.
+- O modelo só tem autorização para processar caminhos dentro das pastas definidas em `PIXELLAYER_ALLOWED_WORKSPACES`.
 - Qualquer tentativa de evasão de diretório (ex: `../../etc/passwd`, `../../.ssh/id_rsa`, `C:\Windows\...`) é interceptada e bloqueada com exceção estruturada `SECURITY_ERROR`.
 
 ### 5.2. Zero Vazamento de Paths do Sistema e Credenciais
@@ -126,6 +128,6 @@ Para proteger a integridade do sistema operacional e da máquina onde o servidor
 - **Nenhum Acesso a Tokens ou Redes**: As ferramentas MCP expostas são estritamente de processamento de imagem (`remove_background`, `vectorize_image`, etc.). O modelo não possui ferramentas para executar comandos shell, invocar chamadas de rede arbitrárias ou inspecionar variáveis de ambiente/arquivos `.env`.
 
 ### 5.3. Prevenção de Negação de Serviço (DoS) e OOM
-- **Limite de Pixels (`IMGCUT_MAX_PIXELS`)**: Imagens com resolução descomprimida anômala (Pixel Flooding) são rejeitadas antes da alocação na GPU/CPU.
-- **Descarregamento Automático (*Zero Idle*)**: Os pesos de redes neurais carregados na GPU são descarregados automaticamente após `IMGCUT_MODEL_TTL` (5 minutos) sem uso.
+- **Limite de Pixels (`PIXELLAYER_MAX_PIXELS`)**: Imagens com resolução descomprimida anômala (Pixel Flooding) são rejeitadas antes da alocação na GPU/CPU.
+- **Descarregamento Automático (*Zero Idle*)**: Os pesos de redes neurais carregados na GPU são descarregados automaticamente após `PIXELLAYER_MODEL_TTL` (5 minutos) sem uso.
 

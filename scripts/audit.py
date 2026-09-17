@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automated Quality Gate & Security Audit for img-cut.
+"""Automated Quality Gate & Security Audit for PixelLayer.
 
 Enforces:
 1. Gitleaks / Secret scanning (API keys, private keys, tokens)
@@ -327,7 +327,7 @@ def audit_git_history() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CI Quality Gate & Security Audit Scanner for img-cut"
+        description="CI Quality Gate & Security Audit Scanner for PixelLayer"
     )
     parser.add_argument(
         "--commit-msg-file",
@@ -358,7 +358,7 @@ def main():
         sys.exit(0 if success else 1)
 
     print("=" * 64)
-    print("🚀 img-cut Quality Gate & Security Scanner")
+    print("🚀 PixelLayer Quality Gate & Security Scanner")
     print("=" * 64)
 
     sec_ok = scan_security_and_paths()

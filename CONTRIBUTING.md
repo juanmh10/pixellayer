@@ -1,12 +1,12 @@
-# Contributing to img-cut
+# Contributing to PixelLayer
 
-Thank you for contributing to **img-cut**! This project is an open-source MCP server designed for high performance, zero host path leakage, and clean security hygiene.
+Thank you for contributing to **PixelLayer** (`pixellayer`)! This project is an open-source MCP server designed for high performance, zero host path leakage, and clean security hygiene.
 
 ---
 
 ## 🔒 Security & Path-Only Principles
 
-1. **No Host Absolute Paths**: Never hardcode host-specific absolute paths (such as `/home/...`, `/Users/...`, or `C:\Users\...`). Use relative workspace paths or environment configurations (`IMGCUT_ALLOWED_WORKSPACES`).
+1. **No Host Absolute Paths**: Never hardcode host-specific absolute paths (such as `/home/...`, `/Users/...`, or `C:\Users\...`). Use relative workspace paths or environment configurations (`PIXELLAYER_ALLOWED_WORKSPACES` / `IMGCUT_ALLOWED_WORKSPACES`).
 2. **Zero Secrets**: Do not commit API keys, tokens, or credentials. All commits are scanned for secrets before submission.
 3. **Pure Transparency**: Background removal outputs must maintain clean 32-bit ARGB alpha transparency without solid background fills.
 

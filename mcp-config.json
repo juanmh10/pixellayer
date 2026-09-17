@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "img-cut": {
+    "pixellayer": {
       "command": "uv",
       "args": [
         "run",
@@ -11,7 +11,7 @@
         "src.mcp_server"
       ],
       "env": {
-        "IMGCUT_ALLOWED_WORKSPACES": "."
+        "PIXELLAYER_ALLOWED_WORKSPACES": "."
       }
     }
   }

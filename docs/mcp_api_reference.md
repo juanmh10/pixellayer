@@ -1,4 +1,4 @@
-# Especificação Completa do MCP & Referência da API (img-cut)
+# Especificação Completa do MCP & Referência da API (PixelLayer)
 
 > Protocolo: **Model Context Protocol (MCP)**  
 > Transporte: **stdio** (JSON-RPC 2.0 sobre canais padrão `stdin`/`stdout`)  
@@ -7,13 +7,13 @@
 
 ---
 
-## 1. Arquitetura do Protocolo MCP no img-cut
+## 1. Arquitetura do Protocolo MCP no PixelLayer
 
-O **img-cut** atua como um servidor MCP local que conecta assistentes inteligentes e LLMs ao poder computacional de processamento de imagens local.
+O **PixelLayer** (`pixellayer`) atua como um servidor MCP local que conecta assistentes inteligentes e LLMs ao poder computacional de processamento de imagens local.
 
 ### 1.1. Princípio Path-Only (Zero Token Bloat)
 - O protocolo MCP tradicional transporta mensagens texto e JSON.
-- O **img-cut NUNCA** envia nem recebe imagens como Base64, strings de bytes ou arrays numéricos.
+- O **PixelLayer NUNCA** envia nem recebe imagens como Base64, strings de bytes ou arrays numéricos.
 - O cliente envia uma referência de caminho relativo (ou absoluto validado) do arquivo no disco (`image_path`).
 - O servidor executa a transformação e devolve uma estrutura JSON contendo o caminho do arquivo gerado (`file_path`) e seus metadados (`width`, `height`, `file_size_bytes`, `reduction_percent`).
 - Isso garante economia massiva na janela de contexto de tokens do LLM e alta performance de I/O.
