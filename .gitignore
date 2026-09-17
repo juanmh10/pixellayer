@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Model weights cache
+models_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+
+# Test artifacts
+tests/output/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Trash
+logs/
+trash/
+
+# Generated outputs
+output/*
+!output/.gitkeep
+!output/to-cut-nobg.png
+!output/carro-to-svg.svg
+
+# Agent instructions & changelog
+AGENTS.md
+.agents/
+CHANGELOG.md
+
+# uv
+.python-version
+
+

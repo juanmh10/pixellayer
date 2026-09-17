@@ -1,0 +1,59 @@
+# img-cut Python package configuration
+
+[project]
+name = "img-cut"
+version = "0.1.0"
+description = "Local MCP server for AI-powered image processing — background removal, format conversion, optimization, and vectorization."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [
+    { name = "juanm" }
+]
+
+dependencies = [
+    # MCP SDK
+    "mcp[cli]>=1.0.0,<2.0.0",
+    # ML / Inference
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.40.0",
+    # Image processing
+    "Pillow>=10.0.0",
+    "opencv-python-headless>=4.8.0",
+    # Vectorization
+    "vtracer>=0.6.0",
+    # Data contracts
+    "pydantic>=2.0.0",
+    # Utilities
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+]
+rmbg = [
+    # BRIA RMBG-2.0 additional deps (uses same transformers stack)
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["N801", "N818", "UP042", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

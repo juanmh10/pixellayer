@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "img-cut": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        ".",
+        "python",
+        "-m",
+        "src.mcp_server"
+      ],
+      "env": {
+        "IMGCUT_ALLOWED_WORKSPACES": "."
+      }
+    }
+  }
+}
