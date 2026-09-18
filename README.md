@@ -17,6 +17,12 @@
 - ⚡ **Zero Idle Cost** — Models lazy-load on first call, auto-unload after TTL
 - 🔌 **MCP Native** — Works with any MCP-compatible agent (Codex, Antigravity, Claude, etc.)
 
+## Architecture
+
+<p align="center">
+  <img src="docs/infra/pixellayer-arquitetura.png" alt="PixelLayer architecture diagram" width="900" />
+</p>
+
 ## Visual Examples
 
 ### 1. Background Removal (`remove_background`)
