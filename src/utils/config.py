@@ -10,22 +10,30 @@ import os
 from pathlib import Path
 
 
+def _get_env(key: str, default: str = "") -> str:
+    """Read environment variable with PIXELLAYER_ prefix first, falling back to IMGCUT_."""
+    val = os.getenv(f"PIXELLAYER_{key}")
+    if val is not None:
+        return val
+    return os.getenv(f"IMGCUT_{key}", default)
+
+
 class Config:
     """Application configuration. Values can be overridden via environment variables."""
 
     # Model settings
-    DEFAULT_MODEL: str = os.getenv("IMGCUT_DEFAULT_MODEL", "birefnet-general")
-    MODEL_TTL_SECONDS: int = int(os.getenv("IMGCUT_MODEL_TTL", "300"))
+    DEFAULT_MODEL: str = _get_env("DEFAULT_MODEL", "birefnet-general")
+    MODEL_TTL_SECONDS: int = int(_get_env("MODEL_TTL", "300"))
     MODELS_CACHE_DIR: Path = Path(
-        os.getenv("IMGCUT_MODELS_CACHE", str(Path(__file__).parent.parent.parent / "models_cache"))
+        _get_env("MODELS_CACHE", str(Path(__file__).parent.parent.parent / "models_cache"))
     )
 
     # Processing defaults
-    DEFAULT_WEBP_QUALITY: int = int(os.getenv("IMGCUT_WEBP_QUALITY", "90"))
-    DEFAULT_JPEG_QUALITY: int = int(os.getenv("IMGCUT_JPEG_QUALITY", "85"))
-    MAX_IMAGE_PIXELS: int = int(os.getenv("IMGCUT_MAX_PIXELS", str(50_000_000)))  # ~7000x7000
-    INFERENCE_TIMEOUT: int = int(os.getenv("IMGCUT_INFERENCE_TIMEOUT", "60"))  # timeout in seconds
-    FORCE_LOCAL_FILES: bool = os.getenv("IMGCUT_FORCE_LOCAL_FILES", "true").lower() in (
+    DEFAULT_WEBP_QUALITY: int = int(_get_env("WEBP_QUALITY", "90"))
+    DEFAULT_JPEG_QUALITY: int = int(_get_env("JPEG_QUALITY", "85"))
+    MAX_IMAGE_PIXELS: int = int(_get_env("MAX_PIXELS", str(50_000_000)))  # ~7000x7000
+    INFERENCE_TIMEOUT: int = int(_get_env("INFERENCE_TIMEOUT", "60"))  # timeout in seconds
+    FORCE_LOCAL_FILES: bool = _get_env("FORCE_LOCAL_FILES", "true").lower() in (
         "1",
         "true",
         "yes",
@@ -34,7 +42,7 @@ class Config:
     # Security
     ALLOWED_WORKSPACES: list[Path] = [
         Path(p.strip()).resolve()
-        for p in os.getenv("IMGCUT_ALLOWED_WORKSPACES", "").split(";")
+        for p in _get_env("ALLOWED_WORKSPACES", "").split(";")
         if p.strip()
     ]
 
@@ -48,7 +56,7 @@ class Config:
         if not workspaces:
             workspaces = [
                 Path(p.strip()).resolve()
-                for p in os.getenv("IMGCUT_ALLOWED_WORKSPACES", "").split(";")
+                for p in _get_env("ALLOWED_WORKSPACES", "").split(";")
                 if p.strip()
             ]
         if not workspaces:
@@ -57,28 +65,24 @@ class Config:
 
     def get_models_cache_dir(self) -> Path:
         """Resolve models cache directory with standard OS cache fallback."""
-        env_cache = os.getenv("IMGCUT_MODELS_CACHE")
+        env_cache = _get_env("MODELS_CACHE", "")
         if env_cache:
             return Path(env_cache).resolve()
         repo_cache = Path(__file__).parent.parent.parent / "models_cache"
         if repo_cache.exists():
             return repo_cache.resolve()
-        user_cache = Path.home() / ".cache" / "img-cut" / "models"
+        user_cache = Path.home() / ".cache" / "pixellayer" / "models"
         user_cache.mkdir(parents=True, exist_ok=True)
         return user_cache
 
     # Logging & Paths
-    LOG_DIR: Path = Path(
-        os.getenv("IMGCUT_LOG_DIR", str(Path(__file__).parent.parent.parent / "logs"))
-    )
+    LOG_DIR: Path = Path(_get_env("LOG_DIR", str(Path(__file__).parent.parent.parent / "logs")))
     LOG_FILE: Path = Path(
-        os.getenv(
-            "IMGCUT_LOG_FILE", str(Path(__file__).parent.parent.parent / "logs" / "img-cut.log")
-        )
+        _get_env("LOG_FILE", str(Path(__file__).parent.parent.parent / "logs" / "pixellayer.log"))
     )
 
     # Device
-    DEVICE: str = os.getenv("IMGCUT_DEVICE", "auto")  # auto, cpu, cuda, mps
+    DEVICE: str = _get_env("DEVICE", "auto")  # auto, cpu, cuda, mps
 
     @classmethod
     def get_device(cls) -> str:

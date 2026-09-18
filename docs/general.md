@@ -97,3 +97,13 @@ O principal diferencial do projeto é o processamento estritamente local com car
 - `logs/`: Arquivos de log de execução da aplicação (ex: `logs/pixellayer.log`).
 - `trash/`: Destino de arquivos temporários descartados, relatórios antigos e saídas obsoletas.
 - `models_cache/`: Diretório de pesos locais baixados das redes neurais (ignorado pelo versionamento Git).
+
+---
+
+## 6. Índice de Documentação do Projeto
+
+1. [`docs/server_exposure.md`](server_exposure.md): Guia de inicialização local e configuração nos clientes MCP (Antigravity CLI, Codex CLI, Claude Code e OpenCode).
+2. [`docs/tools_contracts.md`](tools_contracts.md): Contratos de entrada e saída (Pydantic v2) de cada ferramenta exposta.
+3. [`docs/mcp_api_reference.md`](mcp_api_reference.md): Referência técnica exaustiva de parâmetros, assinaturas e respostas JSON.
+4. [`docs/local_validation_report.md`](local_validation_report.md): Relatório de homologação local e testes de ponta a ponta com harness de IA.
+

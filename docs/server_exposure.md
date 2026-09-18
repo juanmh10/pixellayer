@@ -23,49 +23,24 @@ python -m src.mcp_server
 
 ## 2. Configuração de Clientes MCP
 
-### Configuração com Caminhos Relativos e Portáteis (`mcp-config.json`)
+Configure o **PixelLayer** no seu assistente ou ambiente de agente de IA preferido. Substitua `<path-to-pixellayer>` pelo caminho do repositório clonado e `<path-to-workspaces>` pelos diretórios autorizados para leitura e escrita de imagens.
 
-Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou extensões MCP do VS Code, utilize as configurações abaixo adaptando apenas a variável de ambiente do workspace conforme a pasta do seu projeto atual.
+### 2.1. Antigravity CLI (AGY)
+**Arquivo de Configuração:** `~/.gemini/config/mcp_config.json` (JSON)
 
-#### Exemplo Padrão Portátil:
 ```json
 {
   "mcpServers": {
     "pixellayer": {
-      "command": "uv",
+      "command": "<path-to-pixellayer>/.venv/bin/python",
       "args": [
-        "run",
-        "--directory",
-        ".",
-        "python",
         "-m",
         "src.mcp_server"
       ],
       "env": {
-        "PIXELLAYER_ALLOWED_WORKSPACES": "."
-      }
-    }
-  }
-}
-```
-
-#### Exemplo para Claude Desktop ou Antigravity CLI:
-```json
-{
-  "mcpServers": {
-    "pixellayer": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "${workspaceFolder}",
-        "python",
-        "-m",
-        "src.mcp_server"
-      ],
-      "env": {
-        "PIXELLAYER_ALLOWED_WORKSPACES": "${workspaceFolder}",
-        "PIXELLAYER_LOG_DIR": "${workspaceFolder}/logs",
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
         "PIXELLAYER_MODEL_TTL": "300"
       }
     }
@@ -73,19 +48,98 @@ Para integrar o servidor em clientes como Claude Desktop, Antigravity, Cursor ou
 }
 ```
 
-#### Exemplo para Codex CLI (`~/.codex/config.toml`):
+*Ou utilizando `uv`:*
+```json
+{
+  "mcpServers": {
+    "pixellayer": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "<path-to-pixellayer>",
+        "python",
+        "-m",
+        "src.mcp_server"
+      ],
+      "env": {
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>"
+      }
+    }
+  }
+}
+```
+
+### 2.2. Codex CLI
+**Arquivo de Configuração:** `~/.codex/config.toml` (TOML)
+
 ```toml
 [mcp_servers.pixellayer]
-command = "<path-to-repo>/.venv/bin/python"
+command = "<path-to-pixellayer>/.venv/bin/python"
 args = ["-m", "src.mcp_server"]
 startup_timeout_sec = 30.0
 tool_timeout_sec = 120.0
 
 [mcp_servers.pixellayer.env]
-PYTHONPATH = "<path-to-repo>"
+PYTHONPATH = "<path-to-pixellayer>"
 PIXELLAYER_ALLOWED_WORKSPACES = "<path-to-workspaces>"
-PIXELLAYER_LOG_DIR = "<path-to-repo>/logs"
+PIXELLAYER_LOG_DIR = "<path-to-pixellayer>/logs"
 PIXELLAYER_MODEL_TTL = "300"
+```
+
+### 2.3. Claude Code
+**Arquivo de Configuração:** `.mcp.json` (na raiz do projeto de trabalho) ou `~/.claude.json` (global)
+
+```json
+{
+  "mcpServers": {
+    "pixellayer": {
+      "command": "<path-to-pixellayer>/.venv/bin/python",
+      "args": [
+        "-m",
+        "src.mcp_server"
+      ],
+      "env": {
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
+      }
+    }
+  }
+}
+```
+
+*Ou configure diretamente via linha de comando no Claude Code:*
+```bash
+claude mcp add pixellayer <path-to-pixellayer>/.venv/bin/python -m src.mcp_server -e PYTHONPATH=<path-to-pixellayer> -e PIXELLAYER_ALLOWED_WORKSPACES=<path-to-workspaces>
+```
+
+### 2.4. OpenCode
+**Arquivo de Configuração:** `~/.config/opencode/opencode.json` (ou `opencode.json` na raiz do projeto)
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "pixellayer": {
+      "type": "local",
+      "command": [
+        "<path-to-pixellayer>/.venv/bin/python",
+        "-m",
+        "src.mcp_server"
+      ],
+      "environment": {
+        "PYTHONPATH": "<path-to-pixellayer>",
+        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+        "PIXELLAYER_MODEL_TTL": "300"
+      },
+      "enabled": true,
+      "timeout": 120000
+    }
+  }
+}
 ```
 
 ---

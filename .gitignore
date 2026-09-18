@@ -46,6 +46,8 @@ output/*
 !output/.gitkeep
 !output/to-cut-nobg.png
 !output/carro-to-svg.svg
+input/*_nobg.*
+input/*_vector.svg
 
 # Agent instructions & changelog
 AGENTS.md
