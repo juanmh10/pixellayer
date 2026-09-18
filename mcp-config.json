@@ -2,6 +2,7 @@
   "mcpServers": {
     "pixellayer": {
       "command": "uv",
+      "cwd": ".",
       "args": [
         "run",
         "--directory",

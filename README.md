@@ -1,4 +1,4 @@
-# PixelLayer 🎨
+# [PixelLayer](https://pixellayer.web.app/) 🎨
 
 > Local MCP server for AI-powered image processing — background removal, format conversion, optimization, and vectorization.
 
@@ -6,7 +6,15 @@
 
 **PixelLayer** is a Python-based MCP (Model Context Protocol) server that exposes image processing tools to AI coding agents. When you're developing in any repo and need to process images, your agent calls PixelLayer's tools via MCP — no base64, no token bloat, just file paths in and out.
 
-### Key Features
+## Performance Highlights
+
+- ⚡ **1.9s warm inference** for AI background removal, with **3.9s cold-start latency**.
+- 🪶 **~90 tokens per image operation** through the Path-Only protocol, versus **1.5M+ tokens** for Base64 — a **99.99% reduction**.
+- 💰 **~US$0.0000008 estimated context cost per image**, versus approximately **US$9.95** with Base64.
+
+See the [full performance and token report](docs/performance_and_tokens.md) for methodology and detailed benchmarks.
+
+## Key Features
 
 - 🎯 **Perfect Background Removal** — ARGB alpha channel, no fill, no quality loss
 - 🤖 **Multi-Model Support** — BiRefNet (general/portrait/matting/hr), RMBG-2.0, IS-Net
@@ -66,6 +74,7 @@ Configure **pixellayer** in your preferred AI agent environment. Replace `<path-
   "mcpServers": {
     "pixellayer": {
       "command": "<path-to-pixellayer>/.venv/bin/python",
+      "cwd": "<path-to-pixellayer>",
       "args": [
         "-m",
         "src.mcp_server"
@@ -87,6 +96,7 @@ Configure **pixellayer** in your preferred AI agent environment. Replace `<path-
 ```toml
 [mcp_servers.pixellayer]
 command = "<path-to-pixellayer>/.venv/bin/python"
+cwd = "<path-to-pixellayer>"
 args = ["-m", "src.mcp_server"]
 startup_timeout_sec = 30.0
 tool_timeout_sec = 120.0
@@ -133,21 +143,24 @@ claude mcp add pixellayer <path-to-pixellayer>/.venv/bin/python -m src.mcp_serve
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "pixellayer": {
-      "type": "local",
-      "command": [
-        "<path-to-pixellayer>/.venv/bin/python",
-        "-m",
-        "src.mcp_server"
-      ],
-      "environment": {
-        "PYTHONPATH": "<path-to-pixellayer>",
-        "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
-        "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
-        "PIXELLAYER_MODEL_TTL": "300"
-      },
-      "enabled": true,
-      "timeout": 120000
+    "servers": {
+      "pixellayer": {
+        "type": "local",
+        "command": [
+          "<path-to-pixellayer>/.venv/bin/python",
+          "-m",
+          "src.mcp_server"
+        ],
+        "cwd": "<path-to-pixellayer>",
+        "environment": {
+          "PYTHONPATH": "<path-to-pixellayer>",
+          "PIXELLAYER_ALLOWED_WORKSPACES": "<path-to-workspaces>",
+          "PIXELLAYER_LOG_DIR": "<path-to-pixellayer>/logs",
+          "PIXELLAYER_MODEL_TTL": "300"
+        },
+        "disabled": false,
+        "timeout": 120000
+      }
     }
   }
 }
@@ -192,3 +205,7 @@ Need GPU acceleration or want to host PixelLayer on a VPS/Cloud provider for you
 ## License
 
 MIT
+
+---
+
+[Explore PixelLayer](https://pixellayer.web.app/) — the local MCP workflow for fast, token-efficient image processing.
