@@ -12,6 +12,7 @@ import pytest
 from mcp.types import CallToolRequest, CallToolRequestParams
 from PIL import Image
 
+from src.engine.models.registry import registry
 from src.mcp_server.__main__ import create_server
 
 
@@ -104,3 +105,105 @@ async def test_mcp_security_error_blocks_traversal(mcp_server) -> None:
         "SECURITY_ERROR" in res.root.content[0].text
         or "outside authorized workspaces" in res.root.content[0].text
     )
+
+
+def test_create_server_custom_host_port() -> None:
+    """Verify create_server respects custom host and port for remote deployments."""
+    server = create_server(host="0.0.0.0", port=9090)
+    assert server.settings.host == "0.0.0.0"
+    assert server.settings.port == 9090
+
+
+def test_server_health_check_endpoint() -> None:
+    """Verify /health endpoint returns 200 without triggering model loading (Rule 2)."""
+    from starlette.testclient import TestClient
+
+    server = create_server(host="127.0.0.1", port=8000)
+    client = TestClient(server.sse_app())
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "healthy"
+    assert data["service"] == "pixellayer"
+    assert data["version"] == "0.1.0"
+
+    # Confirm zero idle resources (no model weights loaded)
+    for model_info in registry.list_models():
+        assert model_info["is_loaded"] is False
+
+
+def test_create_server_transport_security() -> None:
+    """Verify create_server configures TransportSecuritySettings correctly."""
+    server = create_server(
+        host="0.0.0.0",
+        port=9090,
+        allowed_hosts=["mcp.example.com", "127.0.0.1:*"],
+        enable_dns_rebinding=False,
+    )
+    assert server.settings.transport_security is not None
+    assert server.settings.transport_security.enable_dns_rebinding_protection is False
+    assert server.settings.transport_security.allowed_hosts == ["mcp.example.com", "127.0.0.1:*"]
+
+
+@pytest.mark.asyncio
+async def test_transport_security_middleware_validation() -> None:
+    """Verify TransportSecurityMiddleware allows configured hosts and blocks unlisted hosts."""
+    from mcp.server.transport_security import TransportSecurityMiddleware
+    from starlette.requests import Request
+
+    server = create_server(allowed_hosts=["mcp.allowed.com", "127.0.0.1:*"])
+    mw = TransportSecurityMiddleware(server.settings.transport_security)
+
+    req_valid = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/sse",
+            "headers": [(b"host", b"mcp.allowed.com")],
+        }
+    )
+    res_valid = await mw.validate_request(req_valid, is_post=False)
+    assert res_valid is None
+
+    req_invalid = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/sse",
+            "headers": [(b"host", b"attacker.com")],
+        }
+    )
+    res_invalid = await mw.validate_request(req_invalid, is_post=False)
+    assert res_invalid is not None
+    assert res_invalid.status_code == 421
+
+
+def test_main_cli_argument_parsing() -> None:
+    """Verify CLI parser updates server settings and transport correctly."""
+    import sys
+    from unittest.mock import patch
+
+    from src.mcp_server.__main__ import main, mcp
+
+    test_args = [
+        "__main__.py",
+        "--transport",
+        "sse",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8888",
+        "--allowed-hosts",
+        "mcp.custom.io",
+        "--disable-dns-rebinding",
+    ]
+
+    with patch.object(sys, "argv", test_args):
+        with patch.object(mcp, "run") as mock_run:
+            main()
+            mock_run.assert_called_once_with(transport="sse")
+            assert mcp.settings.host == "0.0.0.0"
+            assert mcp.settings.port == 8888
+            assert mcp.settings.transport_security is not None
+            assert mcp.settings.transport_security.enable_dns_rebinding_protection is False
+            assert mcp.settings.transport_security.allowed_hosts == ["mcp.custom.io"]

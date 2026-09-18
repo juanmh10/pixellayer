@@ -43,6 +43,9 @@ uv run python -m src.mcp_server
 # Or with pip
 pip install -e .
 python -m src.mcp_server
+
+# Or run with Docker (SSE transport on port 8000)
+docker compose up -d
 ```
 
 ## Agent Configuration
@@ -143,6 +146,18 @@ claude mcp add pixellayer <path-to-pixellayer>/.venv/bin/python -m src.mcp_serve
   }
 }
 ```
+
+## Remote & Cloud Deployment (VPS / GPU Cloud)
+
+Need GPU acceleration or want to host PixelLayer on a VPS/Cloud provider for your team?
+
+- 📖 **Comprehensive Deployment Guide**: [`docs/cloud_vps_deploy.md`](docs/cloud_vps_deploy.md)
+- 🐳 **Docker & Docker Compose**: Run with persistent volumes for models, logs, and workspaces.
+- ⚡ **NVIDIA GPU Passthrough**: Accelerate inference to ~200ms using `docker-compose.gpu.yml`.
+- 🔒 **Secure Connection Options**:
+  - **SSH Bridge** (Zero open ports, native encryption)
+  - **Tailscale / WireGuard** (Private mesh network)
+  - **Caddy / Nginx Reverse Proxy** (HTTPS with Bearer Token authentication)
 
 ## Available Tools
 

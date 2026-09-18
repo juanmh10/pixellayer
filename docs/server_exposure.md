@@ -2,6 +2,9 @@
 
 O **PixelLayer** (`pixellayer`) é projetado para rodar como um servidor local baseado em `stdio`, comunicando-se diretamente com o cliente/agente MCP.
 
+> 🌐 **Deseja executar o PixelLayer remotamente em uma VPS ou Nuvem (Cloud)?**  
+> Consulte o guia dedicado em [`docs/cloud_vps_deploy.md`](cloud_vps_deploy.md) com requisitos de hardware, passo a passo com Docker e Systemd, alertas de segurança e configurações de SSH Bridge e SSE.
+
 ---
 
 ## 1. Modos de Inicialização Local

@@ -1,0 +1,36 @@
+# Caddy Reverse Proxy Configuration for PixelLayer MCP Server
+# Place in /etc/caddy/Caddyfile and replace 'mcp.yourdomain.com' with your domain.
+
+mcp.yourdomain.com {
+    # Public health check endpoint for uptime monitors / load balancers
+    handle /health {
+        reverse_proxy 127.0.0.1:8000 {
+            header_up Host 127.0.0.1:8000
+        }
+    }
+
+    # Protected MCP endpoints (SSE stream and messages)
+    handle {
+        # Validate Bearer Token Header to protect unauthenticated MCP access
+        @unauthorized {
+            not header Authorization "Bearer <REPLACE_WITH_YOUR_TOKEN>"
+        }
+        respond @unauthorized "Unauthorized: Invalid MCP Bearer Token" 401
+
+        # Proxy to local FastMCP instance
+        reverse_proxy 127.0.0.1:8000 {
+            # Disable buffering to allow real-time Server-Sent Events (SSE) streaming
+            flush_interval -1
+
+            # Match FastMCP DNS rebinding protection allowed hosts
+            header_up Host 127.0.0.1:8000
+        }
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}

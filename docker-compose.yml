@@ -1,0 +1,31 @@
+services:
+  pixellayer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pixellayer-mcp
+    restart: unless-stopped
+    # Bind to localhost (127.0.0.1) by default to prevent direct unauthenticated exposure to public internet
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # Persistent cache for downloaded neural network weights
+      - ./models_cache:/app/models_cache
+      # Application logs
+      - ./logs:/app/logs
+      # Shared workspace for processing images
+      - ./workspace:/app/workspace
+    environment:
+      - PIXELLAYER_TRANSPORT=sse
+      - PIXELLAYER_HOST=0.0.0.0
+      - PIXELLAYER_PORT=8000
+      - PIXELLAYER_DEVICE=auto
+      - PIXELLAYER_ALLOWED_WORKSPACES=/app/workspace
+      - PIXELLAYER_MODEL_TTL=300
+      - PIXELLAYER_MAX_PIXELS=50000000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

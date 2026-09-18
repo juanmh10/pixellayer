@@ -103,7 +103,10 @@ O principal diferencial do projeto é o processamento estritamente local com car
 ## 6. Índice de Documentação do Projeto
 
 1. [`docs/server_exposure.md`](server_exposure.md): Guia de inicialização local e configuração nos clientes MCP (Antigravity CLI, Codex CLI, Claude Code e OpenCode).
-2. [`docs/tools_contracts.md`](tools_contracts.md): Contratos de entrada e saída (Pydantic v2) de cada ferramenta exposta.
-3. [`docs/mcp_api_reference.md`](mcp_api_reference.md): Referência técnica exaustiva de parâmetros, assinaturas e respostas JSON.
-4. [`docs/local_validation_report.md`](local_validation_report.md): Relatório de homologação local e testes de ponta a ponta com harness de IA.
+2. [`docs/cloud_vps_deploy.md`](cloud_vps_deploy.md): Guia completo de deploy na nuvem e VPS (requisitos mínimos, Docker, Systemd, reverse proxies, SSE e SSH bridge).
+3. [`docs/tools_contracts.md`](tools_contracts.md): Contratos de entrada e saída (Pydantic v2) de cada ferramenta exposta.
+4. [`docs/mcp_api_reference.md`](mcp_api_reference.md): Referência técnica exaustiva de parâmetros, assinaturas e respostas JSON.
+5. [`docs/local_validation_report.md`](local_validation_report.md): Relatório de homologação local e testes de ponta a ponta com harness de IA.
+6. [`docs/performance_and_tokens.md`](performance_and_tokens.md): Relatório de performance, latência e análise comparativa de consumo de tokens (MCP vs alternativas).
+
 

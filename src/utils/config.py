@@ -81,6 +81,29 @@ class Config:
         _get_env("LOG_FILE", str(Path(__file__).parent.parent.parent / "logs" / "pixellayer.log"))
     )
 
+    # Server & Transport settings
+    HOST: str = _get_env("HOST", "127.0.0.1")
+    PORT: int = int(_get_env("PORT", "8000"))
+    TRANSPORT: str = _get_env("TRANSPORT", "stdio")  # stdio, sse, streamable-http
+    ALLOWED_HOSTS: list[str] = [
+        h.strip()
+        for h in _get_env("ALLOWED_HOSTS", "127.0.0.1:*;localhost:*;[::1]:*").split(";")
+        if h.strip()
+    ]
+    ENABLE_DNS_REBINDING: bool = _get_env("ENABLE_DNS_REBINDING", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    ALLOWED_ORIGINS: list[str] = [
+        o.strip()
+        for o in _get_env(
+            "ALLOWED_ORIGINS",
+            "http://127.0.0.1:*;http://localhost:*;http://[::1]:*",
+        ).split(";")
+        if o.strip()
+    ]
+
     # Device
     DEVICE: str = _get_env("DEVICE", "auto")  # auto, cpu, cuda, mps
 

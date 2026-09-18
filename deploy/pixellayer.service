@@ -1,0 +1,22 @@
+[Unit]
+Description=PixelLayer AI Image Processing MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=pixellayer
+Group=pixellayer
+WorkingDirectory=/opt/pixellayer
+EnvironmentFile=/etc/pixellayer/pixellayer.env
+ExecStart=/opt/pixellayer/.venv/bin/python -m src.mcp_server
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Resource isolation and limits
+MemoryMax=7G
+CPUQuota=350%
+
+[Install]
+WantedBy=multi-user.target
