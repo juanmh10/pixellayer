@@ -1,0 +1,95 @@
+name: Security and repository checks
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  git-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check Git objects and whitespace
+        shell: bash
+        run: |
+          git fsck --full --strict
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}" HEAD
+          elif git rev-parse HEAD^ >/dev/null 2>&1; then
+            git show --format= --check HEAD
+          else
+            git diff-tree --root --check HEAD
+          fi
+
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install checksum-verified Gitleaks CLI
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --output gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/security-bin"
+          tar -xzf gitleaks.tar.gz -C "$RUNNER_TEMP/security-bin" gitleaks
+          echo "$RUNNER_TEMP/security-bin" >> "$GITHUB_PATH"
+      - name: Scan all fetched Git refs for secrets
+        run: gitleaks git --redact=100 --no-banner --log-opts="--all" .
+      - name: Scan checked-out files for secrets
+        run: gitleaks dir --redact=100 --no-banner .
+
+  dependency-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install audit tool with a separate toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo +stable install cargo-audit --version 0.22.2 --locked
+      - name: Audit committed Cargo.lock against RustSec
+        run: cargo +stable audit --file Cargo.lock --deny warnings
+
+  workflow-lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install checksum-verified actionlint
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --output actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz' | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/security-bin"
+          tar -xzf actionlint.tar.gz -C "$RUNNER_TEMP/security-bin" actionlint
+          echo "$RUNNER_TEMP/security-bin" >> "$GITHUB_PATH"
+      - name: Lint all GitHub Actions workflows
+        run: actionlint -color

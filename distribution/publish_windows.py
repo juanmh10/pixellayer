@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Promote a reviewed Windows archive; never build or execute the engine."""
 import argparse
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -25,15 +25,6 @@ def version_tuple(version):
     if len(parts) != 3 or not all(VERSION_RE.fullmatch(p) for p in parts):
         raise ValueError('Expected a stable MAJOR.MINOR.PATCH version')
     return tuple(map(int, parts))
-
-
-def release_selection(release_id):
-    match = re.fullmatch(r'(.+?)(?:-candidate\.([1-9][0-9]*))?', release_id)
-    if not match:
-        raise ValueError('Invalid release ID')
-    version = match.group(1)
-    version_tuple(version)
-    return version, 'candidate' if match.group(2) else 'stable'
 
 
 def run(*args):
@@ -112,7 +103,47 @@ def verify(directory, approval):
                     'verify.ps1', 'uninstall.ps1', 'README.md'}
         if not required.issubset(files):
             raise ValueError('Package lacks required files')
+    verify_skill(directory, approval['skill'])
     print(f"Verified approved Windows package: {len(data)} bytes, SHA-256 {approval['sha256']}")
+
+
+def verify_skill(directory, expected):
+    name = expected['filename']
+    if name != f"pixellayer-skill-{expected['version']}.zip":
+        raise ValueError('Unexpected skill filename')
+    archive = directory / name
+    data = archive.read_bytes()
+    if len(data) != expected['size_bytes'] or digest(data) != expected['sha256']:
+        raise ValueError('Skill archive differs from approval')
+    if (directory / (name + '.sha256')).read_text().strip() != f"{expected['sha256']}  {name}":
+        raise ValueError('Skill checksum differs from approval')
+    allowed = {'SKILL.md', 'SETUP.md', 'references/tools.md', 'references/harness-installation.md',
+               'config/render-config.ps1', 'config/codex-cli.mcp.toml',
+               *(f'config/{client}.mcp.json' for client in
+                 ('claude-code', 'cursor', 'copilot-vscode', 'agy', 'opencode', 'opencode-v1', 'chatgpt-work'))}
+    with zipfile.ZipFile(archive) as z:
+        if len(z.namelist()) != len(allowed) or set(z.namelist()) != allowed:
+            raise ValueError('Unexpected skill inventory')
+        if sum(i.file_size for i in z.infolist()) > 1_000_000 or any(i.is_dir() for i in z.infolist()):
+            raise ValueError('Unexpected skill size or directory entries')
+        entrypoint = z.read('SKILL.md').decode('utf-8-sig').replace('\r\n', '\n')
+        if not re.match(r'\A---\nname: pixellayer\ndescription: [^\n]+\n---\n', entrypoint):
+            raise ValueError('Invalid skill frontmatter')
+
+
+def verify_build(approval):
+    run_id = str(approval['build_run_id'])
+    if not run_id.isdecimal():
+        raise ValueError('Invalid public build ID')
+    build = json.loads(run('gh', 'api', f'repos/{REPO}/actions/runs/{run_id}'))
+    if (build['conclusion'] != 'success' or build['head_sha'] != approval['source_commit']
+            or build['path'] != '.github/workflows/ci.yml'):
+        raise ValueError('Package requires a successful matching public build')
+    security = json.loads(run('gh', 'api',
+        f"repos/{REPO}/actions/workflows/security.yml/runs?head_sha={approval['source_commit']}&status=success&per_page=100"))
+    if not any(r['head_sha'] == approval['source_commit'] and r['conclusion'] == 'success'
+               for r in security['workflow_runs']):
+        raise ValueError('Matching public security workflow has not succeeded')
 
 
 class Storage:
@@ -211,38 +242,46 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--directory', type=Path, required=True)
     args = parser.parse_args()
-    version, channel = release_selection(args.version)
+    version = args.version
+    version_tuple(version)
     approval = json.loads((Path(__file__).parent / 'manifests' / f'{args.version}.json').read_text())
     if (approval['version'] != version or approval['platform'] != 'windows-x64'
             or approval.get('release_id', approval['version']) != args.version
-            or approval.get('channel', 'stable') != channel):
+            or approval.get('channel', 'stable') != 'stable'):
         raise ValueError('Wrong release approval')
     if approval['archive'] != f'pixellayer-{version}-windows-x64.zip':
         raise ValueError('Invalid approved archive name')
+    if approval['skill']['version'] != version:
+        raise ValueError('Skill and engine versions must match')
+    for field in ('source_commit', 'engine_commit'):
+        if not re.fullmatch(r'[0-9a-f]{40}', approval[field]):
+            raise ValueError('Invalid public source commit')
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
     tag = 'v' + args.version
     if args.mode == 'verify':
         verify(directory, approval)
         return
-    candidates = []
+    matching_releases = []
     page_number = 1
     while True:
         page = json.loads(run('gh', 'api', f'repos/{REPO}/releases?per_page=100&page={page_number}'))
-        candidates.extend(item for item in page if item['tag_name'] == tag)
+        matching_releases.extend(item for item in page if item['tag_name'] == tag)
         if len(page) < 100:
             break
         page_number += 1
-    if len(candidates) != 1:
+    if len(matching_releases) != 1:
         raise ValueError('Expected exactly one matching draft or published release')
-    release = candidates[0]
-    if release['tag_name'] != tag or release['prerelease'] != (channel == 'candidate'):
+    release = matching_releases[0]
+    if release['tag_name'] != tag or release['prerelease']:
         raise ValueError('GitHub release type does not match approved channel')
-    expected = {approval['archive'], approval['archive'] + '.sha256'}
+    expected = {approval['archive'], approval['archive'] + '.sha256',
+                approval['skill']['filename'], approval['skill']['filename'] + '.sha256'}
     actual = {asset['name'] for asset in release['assets']}
     if not expected.issubset(actual) or actual - expected - {'release.json'}:
         raise ValueError('Draft assets differ from approved public inventory')
     if args.mode == 'prepare':
+        verify_build(approval)
         for name in sorted(expected):
             subprocess.run(['gh', 'release', 'download', tag, '--repo', REPO,
                             '--pattern', name, '--dir', str(directory), '--clobber'], check=True)
@@ -250,16 +289,15 @@ def main():
         return
     verify(directory, approval)
     storage = Storage()
-    pointer = f'channels/{channel}.json'
-    stable_before = storage.get('channels/stable.json') if channel == 'candidate' else None
+    pointer = 'channels/stable.json'
     old_pointer = storage.get(pointer)
-    if old_pointer and channel == 'stable':
+    if old_pointer:
         old = json.loads(public_bytes(BASE + '/' + pointer))
         if version_tuple(old['version']) > version_tuple(version):
             raise ValueError('Refusing a stable channel downgrade')
     name = approval['archive']
-    prefix = f"{'prereleases' if channel == 'candidate' else 'releases'}/{args.version}"
-    manifest = {'schema_version': 1, 'version': version, 'channel': channel,
+    prefix = f'releases/{version}'
+    manifest = {'schema_version': 1, 'version': version, 'channel': 'stable',
                 'published_at': release['created_at'], 'engine_commit': approval['engine_commit'],
                 'packages': {'windows-x64': {
                     'filename': name, 'size_bytes': approval['size_bytes'], 'sha256': approval['sha256'],
@@ -268,18 +306,18 @@ def main():
                     'package_manifest_sha256': approval['package_manifest_sha256']}}}
     if 'source_commit' in approval:
         manifest['source_commit'] = approval['source_commit']
-    if channel == 'candidate':
-        created = datetime.fromisoformat(release['created_at'].replace('Z', '+00:00'))
-        manifest.update(release_id=args.version, testing_only=True,
-                        antivirus_acceptance='pending',
-                        expires_at=(created + timedelta(days=30)).isoformat().replace('+00:00', 'Z'))
+    skill = approval['skill']
+    manifest['skill'] = {**skill, 'url': f"{BASE}/{prefix}/{skill['filename']}",
+                         'fallback_url': f"https://github.com/{REPO}/releases/download/{tag}/{skill['filename']}"}
     manifest_data = json_bytes(manifest)
-    for filename, content_type in [(name, 'application/zip'), (name + '.sha256', 'text/plain')]:
+    for filename, content_type in [(name, 'application/zip'), (name + '.sha256', 'text/plain'),
+                                    (skill['filename'], 'application/zip'),
+                                    (skill['filename'] + '.sha256', 'text/plain')]:
         content = (directory / filename).read_bytes()
-        storage.put(f'{prefix}/{filename}', content, content_type, protect=(channel == 'stable'))
+        storage.put(f'{prefix}/{filename}', content, content_type, protect=True)
         if public_bytes(f'{BASE}/{prefix}/{filename}') != content:
             raise ValueError('Anonymous GCS verification failed')
-    storage.put(f'{prefix}/release.json', manifest_data, 'application/json', protect=(channel == 'stable'))
+    storage.put(f'{prefix}/release.json', manifest_data, 'application/json', protect=True)
     if public_bytes(f'{BASE}/{prefix}/release.json') != manifest_data:
         raise ValueError('Public release manifest verification failed')
     local_manifest = directory / 'release.json'
@@ -293,11 +331,11 @@ def main():
         subprocess.run(['gh', 'release', 'upload', tag, str(local_manifest), '--repo', REPO], check=True)
     if release['draft']:
         subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPO, '--draft=false',
-                        '--latest' if channel == 'stable' else '--latest=false'], check=True)
-    if digest(public_bytes(manifest['packages']['windows-x64']['fallback_url'])) != approval['sha256']:
+                        '--latest'], check=True)
+    if (digest(public_bytes(manifest['packages']['windows-x64']['fallback_url'])) != approval['sha256']
+            or digest(public_bytes(manifest['skill']['fallback_url'])) != skill['sha256']):
         raise ValueError('Anonymous GitHub verification failed')
-    if channel == 'stable':
-        maintain_retention(storage, datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'))
+    maintain_retention(storage, datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'))
     # Use the generation seen before publication, preventing a concurrent rollback being overwritten.
     current = storage.get(pointer)
     if (current or {}).get('generation') != (old_pointer or {}).get('generation'):
@@ -306,11 +344,7 @@ def main():
                 expected_generation=(old_pointer or {}).get('generation', '0'))
     if public_bytes(BASE + '/' + pointer) != manifest_data:
         raise ValueError('Channel verification failed')
-    if channel == 'candidate':
-        stable_after = storage.get('channels/stable.json')
-        if (stable_after or {}).get('generation') != (stable_before or {}).get('generation'):
-            raise ValueError('Stable changed while publishing the candidate; inspect before retrying')
-    print(f'Published {tag}: Windows x64 on GCS and GitHub; {channel} channel verified')
+    print(f'Published {tag}: Windows x64 on GCS and GitHub; stable channel verified')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,19 @@
+{
+  "mcp": {
+    "servers": {
+      "pixellayer": {
+        "type": "local",
+        "command": [
+          "__PIXELLAYER_EXE__",
+          "--workspace",
+          "__PIXELLAYER_WORKSPACE__",
+          "--cache-dir",
+          "__PIXELLAYER_CACHE__",
+          "--ort-dylib",
+          "__PIXELLAYER_RUNTIME__",
+          "mcp"
+        ]
+      }
+    }
+  }
+}

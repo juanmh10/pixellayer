@@ -1,0 +1,3 @@
+[mcp_servers.pixellayer]
+command = "__PIXELLAYER_EXE__"
+args = ["--workspace", "__PIXELLAYER_WORKSPACE__", "--cache-dir", "__PIXELLAYER_CACHE__", "--ort-dylib", "__PIXELLAYER_RUNTIME__", "mcp"]

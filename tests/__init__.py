@@ -1,1 +1,0 @@
-# img-cut test suite

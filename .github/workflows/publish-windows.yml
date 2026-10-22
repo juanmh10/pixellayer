@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Approved release ID (e.g. 0.5.0 or 0.5.1-candidate.1)
+        description: Approved stable version (e.g. 0.5.1)
         required: true
         type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: pixellayer-production-publication
@@ -22,6 +23,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      actions: read
       id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
@@ -31,6 +33,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+          fetch-depth: 0
           sparse-checkout: distribution
           sparse-checkout-cone-mode: true
       - name: Verify approved draft package before Google authentication

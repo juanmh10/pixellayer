@@ -1,46 +1,75 @@
-name: CI Quality Gate & Security Audit
+name: Build native packages
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'product/**']
+    paths-ignore: ['distribution/manifests/**']
   pull_request:
     branches: [main]
+    paths-ignore: ['distribution/manifests/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  audit:
-    name: Security, Lint & Tests
-    runs-on: ubuntu-latest
-
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            platform: windows-x64
+          - runner: ubuntu-22.04
+            platform: linux-x64
+          - runner: ubuntu-24.04-arm
+            platform: linux-aarch64
+          - runner: macos-15-intel
+            platform: osx-x86_64
+          - runner: macos-14
+            platform: osx-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    env:
+      CARGO_INCREMENTAL: '0'
+      RUSTFLAGS: --remap-path-prefix=${{ github.workspace }}=/pixellayer
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          persist-credentials: false
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config curl ca-certificates
+      - name: Prepare Rust toolchain
+        run: rustup show
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check Rust source
+        run: cargo clippy --locked --bin pixellayer -- -D warnings
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
+          python-version: '3.12'
+      - name: Package Windows engine and skill
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          ./scripts/package-windows.ps1
+          ./scripts/package-skill.ps1
+      - name: Package native Unix engine
+        if: runner.os != 'Windows'
+        run: python scripts/package-unix.py
+      - name: Upload packages and checksums
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: |
-          uv sync --extra dev
-
-      - name: Run Gitleaks Security Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Run PixelLayer Quality Gate & Audit
-        run: |
-          uv run python scripts/audit.py --ci
+          name: pixellayer-${{ matrix.platform }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 30
