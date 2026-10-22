@@ -212,7 +212,12 @@ def main():
     if args.mode == 'verify':
         verify(directory, approval)
         return
-    release = json.loads(run('gh', 'api', f'repos/{REPO}/releases/tags/{tag}'))
+    pages = json.loads(run('gh', 'api', '--paginate', '--slurp',
+                           f'repos/{REPO}/releases?per_page=100'))
+    candidates = [item for page in pages for item in page if item['tag_name'] == tag]
+    if len(candidates) != 1:
+        raise ValueError('Expected exactly one matching draft or published release')
+    release = candidates[0]
     if release['tag_name'] != tag or release['prerelease']:
         raise ValueError('Expected stable release candidate')
     expected = {approval['archive'], approval['archive'] + '.sha256'}
