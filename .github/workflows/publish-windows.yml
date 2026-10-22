@@ -1,0 +1,48 @@
+name: Publish Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Approved stable version (MAJOR.MINOR.PATCH)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pixellayer-production-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'juanmh10/pixellayer' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_DIRECTORY: ${{ runner.temp }}/pixellayer-approved-release
+    steps:
+      - name: Checkout distribution automation
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          sparse-checkout: distribution
+          sparse-checkout-cone-mode: true
+      - name: Verify approved draft package before Google authentication
+        run: python3 distribution/publish_windows.py prepare --version "$RELEASE_VERSION" --directory "$RELEASE_DIRECTORY"
+      - name: Authenticate with restricted Google OIDC identity
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: website-prod-juan
+          workload_identity_provider: projects/798198988926/locations/global/workloadIdentityPools/github-actions/providers/pixellayer-prod-publication
+          service_account: pixellayer-prod-publisher@website-prod-juan.iam.gserviceaccount.com
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Publish and verify anonymous downloads
+        run: python3 distribution/publish_windows.py publish --version "$RELEASE_VERSION" --directory "$RELEASE_DIRECTORY"

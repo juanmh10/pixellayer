@@ -1,0 +1,12 @@
+{
+  "rule": [
+    {
+      "action": {"type": "Delete"},
+      "condition": {"matchesPrefix": ["releases/"], "daysSinceCustomTime": 180}
+    },
+    {
+      "action": {"type": "Delete"},
+      "condition": {"matchesPrefix": ["prereleases/"], "age": 30}
+    }
+  ]
+}
