@@ -1,0 +1,19 @@
+{
+  "version": "0.5.1",
+  "platform": "windows-x64",
+  "channel": "stable",
+  "source_commit": "05937e52fcf6f01cf3e1cae5fc5da4e76216869d",
+  "engine_commit": "05937e52fcf6f01cf3e1cae5fc5da4e76216869d",
+  "build_run_id": 39851487369,
+  "archive": "pixellayer-0.5.1-windows-x64.zip",
+  "size_bytes": 8974230,
+  "sha256": "510fecc46d12a31017cd0b89b303a3e572e68dbec5c391ba528a87569ad2e047",
+  "package_manifest_sha256": "ffa398d623abcc8831e744257c9c4e17fe35e401eb89231ac356f0a504fb80c2",
+  "executable_sha256": "6ebdc622bf4535b429d95784686b81e3ee48b5a75cde0c66def5810e708d942a",
+  "skill": {
+    "version": "0.5.1",
+    "filename": "pixellayer-skill-0.5.1.zip",
+    "size_bytes": 23236,
+    "sha256": "55ba630c03a1101ff3abcce702b6573c8d658aee187f5e44d3e9b560fb23dbb9"
+  }
+}
