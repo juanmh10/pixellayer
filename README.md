@@ -1,3 +1,29 @@
+# PixelLayer — native Windows downloads
+
+Download the complete **Windows x64 0.5.0** package:
+
+- [Windows ZIP](https://storage.googleapis.com/pixellayer-prod-downloads-website-prod-juan/releases/0.5.0/pixellayer-0.5.0-windows-x64.zip)
+- [SHA-256 checksum](https://storage.googleapis.com/pixellayer-prod-downloads-website-prod-juan/releases/0.5.0/pixellayer-0.5.0-windows-x64.zip.sha256)
+- [GitHub release and alternative download](https://github.com/juanmh10/pixellayer/releases/tag/v0.5.0)
+- [Stable version JSON](https://storage.googleapis.com/pixellayer-prod-downloads-website-prod-juan/channels/stable.json)
+
+The native package includes the engine, ONNX Runtime, runtime libraries, setup,
+verification and uninstall scripts. The AI model (~928 MiB) is downloaded
+separately during complete setup; verified model caches are reused. Processing
+runs locally on CPU. No GitHub login or compiler is needed for this download.
+The agent skill is distributed separately and is not included in this archive.
+
+After extracting the ZIP, follow its README or [Windows package instructions](distribution/windows-package-README.md).
+Keep the extracted package for verification and per-version uninstallation.
+Public hosting does not imply code signing or antivirus approval.
+
+Only Windows x64 is published in this first native release. The files below
+remain the historical Python implementation; native Rust source has not been
+added to this repository. See [release operations](distribution/README.md)
+for publication, retention and recovery.
+
+---
+
 # [PixelLayer](https://pixellayer.web.app/) 🎨
 
 > Local MCP server for AI-powered image processing — background removal, format conversion, optimization, and vectorization.
