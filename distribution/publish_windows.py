@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Promote a reviewed Windows archive; never build or execute the engine."""
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -25,6 +25,15 @@ def version_tuple(version):
     if len(parts) != 3 or not all(VERSION_RE.fullmatch(p) for p in parts):
         raise ValueError('Expected a stable MAJOR.MINOR.PATCH version')
     return tuple(map(int, parts))
+
+
+def release_selection(release_id):
+    match = re.fullmatch(r'(.+?)(?:-candidate\.([1-9][0-9]*))?', release_id)
+    if not match:
+        raise ValueError('Invalid release ID')
+    version = match.group(1)
+    version_tuple(version)
+    return version, 'candidate' if match.group(2) else 'stable'
 
 
 def run(*args):
@@ -86,7 +95,7 @@ def verify(directory, approval):
         if (manifest['version'] != approval['version']
                 or manifest['target'] != 'x86_64-pc-windows-msvc'
                 or manifest['source_dirty'] is not False
-                or manifest['source_commit'] != approval['engine_commit']
+                or manifest['source_commit'] != approval.get('source_commit', approval['engine_commit'])
                 or manifest['engine_commit'] != approval['engine_commit']
                 or manifest['distribution'] != 'public-windows-v1'):
             raise ValueError('Unexpected package provenance')
@@ -97,6 +106,8 @@ def verify(directory, approval):
             payload = files[entry['path']]
             if len(payload) != entry['size_bytes'] or digest(payload) != entry['sha256']:
                 raise ValueError('Package file integrity failure')
+        if approval.get('executable_sha256') and digest(files['pixellayer.exe']) != approval['executable_sha256']:
+            raise ValueError('Executable differs from approved review sample')
         required = {'pixellayer.exe', 'onnxruntime.dll', 'install.ps1', 'setup.ps1',
                     'verify.ps1', 'uninstall.ps1', 'README.md'}
         if not required.issubset(files):
@@ -134,7 +145,7 @@ class Storage:
         url = self.object_url(name) + '?ifMetagenerationMatch=' + current['metageneration']
         self.request('PATCH', url, json_bytes(metadata))
 
-    def put(self, name, data, content_type, immutable=True, expected_generation=None):
+    def put(self, name, data, content_type, immutable=True, expected_generation=None, protect=True):
         current = self.get(name)
         if current and immutable:
             if public_bytes(f'{BASE}/{name}') != data:
@@ -145,7 +156,7 @@ class Storage:
             raise ValueError('Object generation changed; refusing replacement')
         metadata = {'name': name, 'contentType': content_type,
                     'cacheControl': 'public,max-age=31536000,immutable' if immutable else 'no-cache,max-age=0',
-                    'temporaryHold': immutable}
+                    'temporaryHold': immutable and protect}
         boundary = 'pixellayer-publication-boundary'
         body = (f'--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'.encode()
                 + json_bytes(metadata)
@@ -200,11 +211,13 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--directory', type=Path, required=True)
     args = parser.parse_args()
-    version_tuple(args.version)
+    version, channel = release_selection(args.version)
     approval = json.loads((Path(__file__).parent / 'manifests' / f'{args.version}.json').read_text())
-    if approval['version'] != args.version or approval['platform'] != 'windows-x64':
+    if (approval['version'] != version or approval['platform'] != 'windows-x64'
+            or approval.get('release_id', approval['version']) != args.version
+            or approval.get('channel', 'stable') != channel):
         raise ValueError('Wrong release approval')
-    if approval['archive'] != f'pixellayer-{args.version}-windows-x64.zip':
+    if approval['archive'] != f'pixellayer-{version}-windows-x64.zip':
         raise ValueError('Invalid approved archive name')
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
@@ -223,8 +236,8 @@ def main():
     if len(candidates) != 1:
         raise ValueError('Expected exactly one matching draft or published release')
     release = candidates[0]
-    if release['tag_name'] != tag or release['prerelease']:
-        raise ValueError('Expected stable release candidate')
+    if release['tag_name'] != tag or release['prerelease'] != (channel == 'candidate'):
+        raise ValueError('GitHub release type does not match approved channel')
     expected = {approval['archive'], approval['archive'] + '.sha256'}
     actual = {asset['name'] for asset in release['assets']}
     if not expected.issubset(actual) or actual - expected - {'release.json'}:
@@ -237,27 +250,36 @@ def main():
         return
     verify(directory, approval)
     storage = Storage()
-    old_pointer = storage.get('channels/stable.json')
-    if old_pointer:
-        old = json.loads(public_bytes(BASE + '/channels/stable.json'))
-        if version_tuple(old['version']) > version_tuple(args.version):
+    pointer = f'channels/{channel}.json'
+    stable_before = storage.get('channels/stable.json') if channel == 'candidate' else None
+    old_pointer = storage.get(pointer)
+    if old_pointer and channel == 'stable':
+        old = json.loads(public_bytes(BASE + '/' + pointer))
+        if version_tuple(old['version']) > version_tuple(version):
             raise ValueError('Refusing a stable channel downgrade')
     name = approval['archive']
-    prefix = f'releases/{args.version}'
-    manifest = {'schema_version': 1, 'version': args.version, 'channel': 'stable',
+    prefix = f"{'prereleases' if channel == 'candidate' else 'releases'}/{args.version}"
+    manifest = {'schema_version': 1, 'version': version, 'channel': channel,
                 'published_at': release['created_at'], 'engine_commit': approval['engine_commit'],
                 'packages': {'windows-x64': {
                     'filename': name, 'size_bytes': approval['size_bytes'], 'sha256': approval['sha256'],
                     'url': f'{BASE}/{prefix}/{name}',
                     'fallback_url': f'https://github.com/{REPO}/releases/download/{tag}/{name}',
                     'package_manifest_sha256': approval['package_manifest_sha256']}}}
+    if 'source_commit' in approval:
+        manifest['source_commit'] = approval['source_commit']
+    if channel == 'candidate':
+        created = datetime.fromisoformat(release['created_at'].replace('Z', '+00:00'))
+        manifest.update(release_id=args.version, testing_only=True,
+                        antivirus_acceptance='pending',
+                        expires_at=(created + timedelta(days=30)).isoformat().replace('+00:00', 'Z'))
     manifest_data = json_bytes(manifest)
     for filename, content_type in [(name, 'application/zip'), (name + '.sha256', 'text/plain')]:
         content = (directory / filename).read_bytes()
-        storage.put(f'{prefix}/{filename}', content, content_type)
+        storage.put(f'{prefix}/{filename}', content, content_type, protect=(channel == 'stable'))
         if public_bytes(f'{BASE}/{prefix}/{filename}') != content:
             raise ValueError('Anonymous GCS verification failed')
-    storage.put(f'{prefix}/release.json', manifest_data, 'application/json')
+    storage.put(f'{prefix}/release.json', manifest_data, 'application/json', protect=(channel == 'stable'))
     if public_bytes(f'{BASE}/{prefix}/release.json') != manifest_data:
         raise ValueError('Public release manifest verification failed')
     local_manifest = directory / 'release.json'
@@ -270,19 +292,25 @@ def main():
     else:
         subprocess.run(['gh', 'release', 'upload', tag, str(local_manifest), '--repo', REPO], check=True)
     if release['draft']:
-        subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPO, '--draft=false', '--latest'], check=True)
+        subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPO, '--draft=false',
+                        '--latest' if channel == 'stable' else '--latest=false'], check=True)
     if digest(public_bytes(manifest['packages']['windows-x64']['fallback_url'])) != approval['sha256']:
         raise ValueError('Anonymous GitHub verification failed')
-    maintain_retention(storage, datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'))
+    if channel == 'stable':
+        maintain_retention(storage, datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'))
     # Use the generation seen before publication, preventing a concurrent rollback being overwritten.
-    current = storage.get('channels/stable.json')
+    current = storage.get(pointer)
     if (current or {}).get('generation') != (old_pointer or {}).get('generation'):
-        raise ValueError('Stable channel changed during publication; refusing replacement')
-    storage.put('channels/stable.json', manifest_data, 'application/json', immutable=False,
+        raise ValueError('Channel changed during publication; refusing replacement')
+    storage.put(pointer, manifest_data, 'application/json', immutable=False,
                 expected_generation=(old_pointer or {}).get('generation', '0'))
-    if public_bytes(BASE + '/channels/stable.json') != manifest_data:
-        raise ValueError('Stable channel verification failed')
-    print(f'Published {tag}: Windows x64 on GCS and GitHub; stable channel verified')
+    if public_bytes(BASE + '/' + pointer) != manifest_data:
+        raise ValueError('Channel verification failed')
+    if channel == 'candidate':
+        stable_after = storage.get('channels/stable.json')
+        if (stable_after or {}).get('generation') != (stable_before or {}).get('generation'):
+            raise ValueError('Stable changed while publishing the candidate; inspect before retrying')
+    print(f'Published {tag}: Windows x64 on GCS and GitHub; {channel} channel verified')
 
 
 if __name__ == '__main__':

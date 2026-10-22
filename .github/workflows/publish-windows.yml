@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Approved stable version (MAJOR.MINOR.PATCH)
+        description: Approved release ID (e.g. 0.5.0 or 0.5.1-candidate.1)
         required: true
         type: string
 

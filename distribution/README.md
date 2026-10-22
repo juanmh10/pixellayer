@@ -68,3 +68,25 @@ remove the publisher's download-bucket object binding. To stop anonymous access,
 remove `allUsers`/`roles/storage.objectViewer` from the download bucket. Neither
 operation deletes data. Infrastructure recreation requires separately authorized
 GCP changes; the publication workflow cannot edit IAM or bucket settings.
+
+## Test candidates
+
+The same workflow accepts an approved ID such as `0.5.1-candidate.1`. The package's
+engine version remains `0.5.1`; the ID names this particular immutable test bundle.
+Create its draft GitHub release as a **prerelease**, targeted at the reviewed
+public distribution commit. Candidate assets go under `prereleases/ID/`; their
+manifest is mirrored to `channels/candidate.json`. The manifest declares testing
+only, expiry after 30 days and pending antivirus acceptance. Candidate objects
+have no Temporary Hold, allowing the existing 30-day lifecycle rule to apply.
+
+Candidate publication never runs stable retention or writes stable.json, and
+publishes the GitHub prerelease with latest=false. The stable generation is
+checked before and after publication. GitHub's latest stable remains unchanged.
+Do not use a candidate implicitly for a normal stable installation. The test
+skill or explicit user request must select the exact candidate ID.
+
+To withdraw a candidate, remove its channel pointer using the current generation
+as a precondition and mark its GitHub prerelease as withdrawn/draft. Leave stable
+untouched. Versioned candidates are immutable and expire from GCS after 30 days;
+GitHub may retain them for diagnosis. Do not overwrite a candidate ID for a new
+bundle: publish candidate.2 instead. Skill and private source are not published.
