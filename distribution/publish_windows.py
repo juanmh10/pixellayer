@@ -212,9 +212,14 @@ def main():
     if args.mode == 'verify':
         verify(directory, approval)
         return
-    pages = json.loads(run('gh', 'api', '--paginate', '--slurp',
-                           f'repos/{REPO}/releases?per_page=100'))
-    candidates = [item for page in pages for item in page if item['tag_name'] == tag]
+    candidates = []
+    page_number = 1
+    while True:
+        page = json.loads(run('gh', 'api', f'repos/{REPO}/releases?per_page=100&page={page_number}'))
+        candidates.extend(item for item in page if item['tag_name'] == tag)
+        if len(page) < 100:
+            break
+        page_number += 1
     if len(candidates) != 1:
         raise ValueError('Expected exactly one matching draft or published release')
     release = candidates[0]
