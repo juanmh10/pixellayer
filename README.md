@@ -46,9 +46,20 @@ or install that folder using your agent's skill mechanism. Its `SKILL.md` includ
 the essential setup and usage instructions; setup templates for Claude Code,
 Cursor, and GitHub Copilot in VS Code are in `skill/pixellayer/config/`.
 
-Windows x64 is the validated distribution target. Other native targets are built in CI; public installation currently targets
-Windows x64. Copilot templates are included;
-Copilot validation is planned for a later iteration.
+Windows x64 is the validated public distribution target. Other native targets are
+built in CI. Copilot templates are included; Copilot validation is planned for a
+later iteration.
+
+## Documentation
+
+Start with the [documentation index](docs/index.md), or go directly to
+[installation](docs/installation.md), [client configuration](docs/clients.md),
+[image operations](docs/usage.md), [uninstall](docs/uninstall.md),
+[troubleshooting](docs/troubleshooting.md), [release operation](docs/releases.md)
+and [licenses/model provenance](docs/licenses.md).
+
+The published 0.5.1 archives remain tied to their recorded source commit. Later
+changes on `main` do not replace the released binaries or skill ZIP.
 
 ## License
 

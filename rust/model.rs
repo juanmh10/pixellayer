@@ -104,7 +104,7 @@ impl ModelManager {
             "revision": REVISION, "sha256": spec.sha, "download_size_bytes": spec.size,
             "variant": spec.variant, "cache_filename": spec.file, "threads": self.threads,
             "size_bytes": spec.size,
-            "artifact_origin": if matches!(self.precision, Precision::Int8) { "local derivation; scripts/quantize-int8.py" } else { "pinned upstream ONNX" },
+            "artifact_origin": if matches!(self.precision, Precision::Int8) { "local derivation; experimental artifact supplied separately" } else { "pinned upstream ONNX" },
             "experimental": matches!(self.precision, Precision::Int8),
             "download_available": spec.url.is_some(),
             "quantization": if matches!(self.precision, Precision::Int8) { "dynamic constant-weight MatMul INT8 per-channel; Conv and remaining operators FP32" } else { "none" },
